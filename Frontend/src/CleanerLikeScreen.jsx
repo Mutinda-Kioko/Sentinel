@@ -1,8 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { useTheme } from './contexts/ThemeContext';
+
+import Group89Icon from '../assets/images/Group 89.svg';
+import Group90Icon from '../assets/images/Group 90.svg';
+import Group91Icon from '../assets/images/Group 91.svg';
+import Group92Icon from '../assets/images/Group 92.svg';
+import Group99Icon from '../assets/images/Group 99.svg';
+import Group100Icon from '../assets/images/Group 100.svg';
+import Group101Icon from '../assets/images/Group 101.svg';
+
+const ICONS = {
+  group89: Group89Icon,
+  group90: Group90Icon,
+  group91: Group91Icon,
+  group92: Group92Icon,
+  group99: Group99Icon,
+  group100: Group100Icon,
+  group101: Group101Icon,
+};
 
 const RING_SIZE = 260;
 const STROKE_WIDTH = 28;
@@ -20,10 +38,10 @@ const DEFAULT_STATS = [
 ];
 
 const DEFAULT_ITEMS = [
-  { label: 'Big files', size: '2.05 GB', icon: require('../assets/images/Group 89.png') },
-  { label: 'Audio & video', size: '3.87 GB', icon: require('../assets/images/Group 90.png') },
-  { label: 'Apps uninstallation', size: '4.37 GB', icon: require('../assets/images/Group 91.png') },
-  { label: 'Junk & caches', size: '8.65 GB', icon: require('../assets/images/Group 92.png') },
+  { label: 'Big files', size: '2.05 GB', iconKey: 'group89' },
+  { label: 'Audio & video', size: '3.87 GB', iconKey: 'group90' },
+  { label: 'Apps uninstallation', size: '4.37 GB', iconKey: 'group91' },
+  { label: 'Junk & caches', size: '8.65 GB', iconKey: 'group92' },
 ];
 
 export default function CleanerLikeScreen({
@@ -45,6 +63,10 @@ export default function CleanerLikeScreen({
   const [activeItemLabel, setActiveItemLabel] = useState(defaultActiveLabel || null);
 
   useEffect(() => {
+    // Reset progress when data changes
+    setMainPercent(0);
+    setStatPercents(Object.fromEntries(stats.map(s => [s.label, 0])));
+
     const duration = 900;
     const start = Date.now();
 
@@ -61,7 +83,12 @@ export default function CleanerLikeScreen({
       }
     };
 
-    requestAnimationFrame(animate);
+    // Small delay to ensure state is reset before animation starts
+    const timeout = setTimeout(() => {
+      requestAnimationFrame(animate);
+    }, 50);
+
+    return () => clearTimeout(timeout);
   }, [mainPercentTarget, stats]);
 
   return (
@@ -213,11 +240,30 @@ export default function CleanerLikeScreen({
 
           {/* List items */}
           <View style={styles.list}>
-            {items.map(item => {
+            {items.map((item, index) => {
               const isActive = activeItemLabel === item.label;
+              // Safely get icon component - ensure it's a valid React component
+              let IconComponent = ICONS.group89; // default fallback
+              
+              // Convert iconKey to string if it's a number
+              const iconKeyStr = item.iconKey ? String(item.iconKey) : null;
+              
+              if (iconKeyStr && ICONS[iconKeyStr]) {
+                const candidate = ICONS[iconKeyStr];
+                // Verify it's actually a component (function or class/object with render method)
+                if (typeof candidate === 'function') {
+                  IconComponent = candidate;
+                } else if (candidate && typeof candidate === 'object') {
+                  // Check if it's a React component (has $$typeof or default export)
+                  if (candidate.$$typeof || candidate.default) {
+                    IconComponent = candidate.default || candidate;
+                  }
+                }
+              }
+              
               return (
                 <TouchableOpacity
-                  key={item.label}
+                  key={item.label || `item-${index}`}
                   activeOpacity={0.9}
                   onPress={() => setActiveItemLabel(item.label)}
                   style={[
@@ -229,7 +275,13 @@ export default function CleanerLikeScreen({
                 >
                   <View style={styles.listLeft}>
                     <View style={styles.listIconCircle}>
-                      <Image source={item.icon} style={styles.listIconImage} />
+                      {typeof IconComponent === 'function' ? (
+                        <IconComponent
+                          width={24}
+                          height={24}
+                          color={colors.accent}
+                        />
+                      ) : null}
                     </View>
                     <Text style={[styles.listLabel, { color: colors.text }]}>{item.label}</Text>
                   </View>
@@ -403,11 +455,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  listIconImage: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
   },
   listLabel: {
     fontSize: 13,

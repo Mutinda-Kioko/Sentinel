@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { useTheme } from './contexts/ThemeContext';
 import { fetchAntivirusConfig } from './global';
 
+import VectorIcon from '../assets/images/Vector.svg';
+import Group99Icon from '../assets/images/Group 99.svg';
+import Group100Icon from '../assets/images/Group 100.svg';
+import Group101Icon from '../assets/images/Group 101.svg';
+
+const ICONS = {
+  group99: Group99Icon,
+  group100: Group100Icon,
+  group101: Group101Icon,
+};
+
 const RING_SIZE = 260;
 const STROKE_WIDTH = 16;
 const RADIUS = (RING_SIZE - STROKE_WIDTH) / 2;
-
-const ICONS = {
-  group101: require('../assets/images/Group 101.png'),
-  group100: require('../assets/images/Group 100.png'),
-  group99: require('../assets/images/Group 99.png'),
-};
 
 const ROWS_DEFAULT = [
   { label: 'Full Scan', iconKey: 'group101' },
@@ -46,6 +51,9 @@ export default function Antivirus() {
   }, []);
 
   useEffect(() => {
+    // Reset progress when target changes
+    setProgress(0);
+
     const duration = 900;
     const start = Date.now();
 
@@ -57,7 +65,12 @@ export default function Antivirus() {
       if (t < 1) requestAnimationFrame(tick);
     };
 
-    requestAnimationFrame(tick);
+    // Small delay to ensure state is reset before animation starts
+    const timeout = setTimeout(() => {
+      requestAnimationFrame(tick);
+    }, 50);
+
+    return () => clearTimeout(timeout);
   }, [target]);
 
   const circumference = 2 * Math.PI * RADIUS;
@@ -134,11 +147,10 @@ export default function Antivirus() {
           {/* Check icon */}
           <View style={styles.checkWrapper}>
             <View style={[styles.checkCircle, { backgroundColor: isDarkMode ? '#0D2A6A' : '#DBEAFE', borderColor: colors.accent }]}>
-              <Image
-                source={require('../assets/images/Vector.png')}
-                style={styles.checkIcon}
-                resizeMode="contain"
-                tintColor={isDarkMode ? '#FFFFFF' : '#111827'}
+              <VectorIcon
+                width={36}
+                height={36}
+                color={isDarkMode ? '#FFFFFF' : '#111827'}
               />
             </View>
           </View>
@@ -158,22 +170,44 @@ export default function Antivirus() {
 
       {/* Bottom list */}
       <View style={[styles.bottomListCard, { backgroundColor: colors.background }]}>
-        {rows.map(row => (
-          <TouchableOpacity key={row.label} activeOpacity={0.7} style={[styles.row, { backgroundColor: colors.card }]}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.rowIconOuter, { borderColor: colors.accent }]}>
-                <Image
-                  source={ICONS[row.iconKey] || ICONS.group101}
-                  style={styles.rowIconImage}
-                  resizeMode="contain"
-                  tintColor={colors.accent}
-                />
+        {rows.map((row, index) => {
+          // Safely get icon component - ensure it's a valid React component
+          let IconComponent = ICONS.group101; // default fallback
+          
+          // Convert iconKey to string if it's a number
+          const iconKeyStr = row.iconKey ? String(row.iconKey) : null;
+          
+          if (iconKeyStr && ICONS[iconKeyStr]) {
+            const candidate = ICONS[iconKeyStr];
+            // Verify it's actually a component (function or class/object with render method)
+            if (typeof candidate === 'function') {
+              IconComponent = candidate;
+            } else if (candidate && typeof candidate === 'object') {
+              // Check if it's a React component (has $$typeof or default export)
+              if (candidate.$$typeof || candidate.default) {
+                IconComponent = candidate.default || candidate;
+              }
+            }
+          }
+          
+          return (
+            <TouchableOpacity key={row.label || `row-${index}`} activeOpacity={0.7} style={[styles.row, { backgroundColor: colors.card }]}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.rowIconOuter, { borderColor: colors.accent }]}>
+                  {typeof IconComponent === 'function' ? (
+                    <IconComponent
+                      width={18}
+                      height={18}
+                      color={colors.accent}
+                    />
+                  ) : null}
+                </View>
+                <Text style={[styles.rowLabel, { color: colors.text }]}>{row.label}</Text>
               </View>
-              <Text style={[styles.rowLabel, { color: colors.text }]}>{row.label}</Text>
-            </View>
-            <Text style={[styles.rowArrow, { color: colors.text }]}>{'›'}</Text>
-          </TouchableOpacity>
-        ))}
+              <Text style={[styles.rowArrow, { color: colors.text }]}>{'›'}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -243,11 +277,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkIcon: {
-    width: 36,
-    height: 36,
-  },
-
   statusTextBlock: {
     marginTop: 18,
     alignItems: 'center',
@@ -303,10 +332,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  rowIconImage: {
-    width: 18,
-    height: 18,
   },
   rowLabel: {
     fontSize: 14,

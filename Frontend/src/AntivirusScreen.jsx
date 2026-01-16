@@ -9,10 +9,10 @@ const stats = [
 ];
 
 const items = [
-  { label: 'Full scan', size: 'Recommended', icon: require('../assets/images/Group 101.png') },
-  { label: 'Update signatures', size: 'Latest: today', icon: require('../assets/images/Group 100.png') },
-  { label: 'Real-time protection', size: 'Enabled', icon: require('../assets/images/Group 99.png') },
-  { label: 'Quarantine', size: '0 items', icon: require('../assets/images/Group 92.png') },
+  { label: 'Full scan', size: 'Recommended', iconKey: 'group101' },
+  { label: 'Update signatures', size: 'Latest: today', iconKey: 'group100' },
+  { label: 'Real-time protection', size: 'Enabled', iconKey: 'group99' },
+  { label: 'Quarantine', size: '0 items', iconKey: 'group92' },
 ];
 
 export default function AntivirusScreen() {

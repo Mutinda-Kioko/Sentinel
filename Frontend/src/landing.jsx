@@ -5,20 +5,20 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Image,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useTheme } from './contexts/ThemeContext';
+import { fetchLandingConfig } from './global';
 
 const FEATURES = [
-  { label: 'Cleaner', icon: require('../assets/images/Delete.png'), route: '/cleaner' },
-  { label: 'Antivirus', icon: require('../assets/images/Shield.png'), route: '/antivirus-detail' },
-  { label: 'Battery', icon: require('../assets/images/Battery.png'), route: '/battery' },
-  { label: 'Data', icon: require('../assets/images/Big Data.png'), route: '/data' },
-  { label: 'Security', icon: require('../assets/images/Rocket.png'), route: '/security' },
-  { label: 'Files', icon: require('../assets/images/Document.png'), route: '/files' },
+  { label: 'Cleaner', iconName: 'trash-outline', route: '/cleaner', isSvg: false },
+  { label: 'Antivirus', iconName: 'shield-outline', route: '/antivirus-detail', isSvg: false },
+  { label: 'Battery', iconName: 'battery-half-outline', route: '/battery', isSvg: false },
+  { label: 'Data', iconName: 'server-outline', route: '/data', isSvg: false },
+  { label: 'Security', iconName: 'rocket-outline', route: '/security', isSvg: false },
+  { label: 'Files', iconName: 'document-text-outline', route: '/files', isSvg: false },
 ];
 
 const RING_SIZE = 340;
@@ -29,14 +29,35 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 export default function Landing() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
-  // Start at 0 and animate up to a target value
+  // Start at 0 and animate up to a target value from backend
   const [progress, setProgress] = useState(0);
+  const [targetPercent, setTargetPercent] = useState(85); // Default fallback
   const [selectedFeature, setSelectedFeature] = useState(null); // No button highlighted by default
 
+  // Fetch optimization percentage from backend
   useEffect(() => {
-    const TARGET_PROGRESS = 0.85; // 85%
+    const loadConfig = async () => {
+      try {
+        const cfg = await fetchLandingConfig();
+        if (typeof cfg?.optimizationPercent === 'number') {
+          setTargetPercent(cfg.optimizationPercent);
+        }
+      } catch (e) {
+        console.log('Failed to load landing config from backend', e);
+        // Keep default 85% if backend fails
+      }
+    };
+    loadConfig();
+  }, []);
+
+  // Animate progress based on target from backend
+  useEffect(() => {
+    const TARGET_PROGRESS = targetPercent / 100;
     const STEP = 0.01;
     const INTERVAL = 40;
+
+    // Reset progress when target changes
+    setProgress(0);
 
     const timer = setInterval(() => {
       setProgress(p => {
@@ -50,7 +71,7 @@ export default function Landing() {
     }, INTERVAL);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [targetPercent]);
 
   const percentage = Math.round(progress * 100);
   const offset = CIRCUMFERENCE * (1 - progress);
@@ -217,14 +238,16 @@ export default function Landing() {
                     active && styles.tileActive,
                   ]}
                 >
-                  <Image
-                    source={item.icon}
-                    style={[styles.icon, active && styles.iconActive]}
-                    tintColor={isDarkMode
-                      ? (active ? colors.accent : colors.textSecondary)
-                      : '#7B2BFF' // Purple in light mode
-                    }
-                  />
+                  <View style={styles.iconContainer}>
+                    <Ionicons
+                      name={item.iconName}
+                      size={44}
+                      color={isDarkMode
+                        ? (active ? colors.accent : colors.textSecondary)
+                        : '#7B2BFF' // Purple in light mode
+                      }
+                    />
+                  </View>
                   <Text style={[
                     styles.tileText,
                     {
@@ -374,12 +397,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
   },
 
-  icon: {
+  iconContainer: {
     width: 44,
     height: 44,
-  },
-  iconActive: {
-    // tintColor handled inline
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   tileText: {

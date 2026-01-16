@@ -157,6 +157,9 @@ export async function getNotificationStatusFallback() {
   return true;
 }
 
+// Note: Icon mapping is now handled via SVG imports in individual components
+// Backend sends iconKey (e.g., 'group89') and components import the corresponding SVG
+
 // -------- High-level feature APIs (Cleaner, Files, Data, Security, Antivirus, Settings) --------
 
 export function fetchCleanerConfig() {
@@ -177,6 +180,10 @@ export function fetchSecurityConfig() {
 
 export function fetchAntivirusConfig() {
   return apiGet('/antivirus');
+}
+
+export function fetchLandingConfig() {
+  return apiGet('/landing');
 }
 
 export function fetchSettingsConfig() {

@@ -9,10 +9,10 @@ const stats = [
 ];
 
 const items = [
-  { label: 'Battery health', size: 'Good', icon: require('../assets/images/Group 89.png') },
-  { label: 'Optimize charging', size: 'On', icon: require('../assets/images/Group 90.png') },
-  { label: 'Power saver', size: 'Off', icon: require('../assets/images/Group 91.png') },
-  { label: 'App drainers', size: '3 apps', icon: require('../assets/images/Group 92.png') },
+  { label: 'Battery health', size: 'Good', iconKey: 'group89' },
+  { label: 'Optimize charging', size: 'On', iconKey: 'group90' },
+  { label: 'Power saver', size: 'Off', iconKey: 'group91' },
+  { label: 'App drainers', size: '3 apps', iconKey: 'group92' },
 ];
 
 export default function Battery() {

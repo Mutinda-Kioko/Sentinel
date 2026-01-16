@@ -17,6 +17,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from './contexts/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
+import AccountIcon from '../assets/images/account.svg';
 import {
   getDeviceInfo,
   getLanguageName,
@@ -253,10 +254,10 @@ export default function Settings() {
                   style={styles.profileAvatarImage}
                 />
               ) : (
-                <Image
-                  source={require('../assets/images/account.png')}
-                  style={styles.profileAvatarImage}
-                  tintColor={isDarkMode ? colors.text : undefined}
+                <AccountIcon
+                  width={56}
+                  height={56}
+                  color={isDarkMode ? colors.text : colors.textSecondary}
                 />
               )}
               <View style={styles.editImageOverlay}>
@@ -537,11 +538,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB', // Will be overridden by theme
     backgroundColor: '#F3F4F6', // Will be overridden by theme
     position: 'relative',
-  },
-  profileAvatarImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
   },
   editImageOverlay: {
     position: 'absolute',

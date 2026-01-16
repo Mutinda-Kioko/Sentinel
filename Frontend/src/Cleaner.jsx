@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { useTheme } from './contexts/ThemeContext';
 import { fetchCleanerConfig } from './global';
+
+import Group89Icon from '../assets/images/Group 89.svg';
+import Group90Icon from '../assets/images/Group 90.svg';
+import Group91Icon from '../assets/images/Group 91.svg';
+import Group92Icon from '../assets/images/Group 92.svg';
+
+const ICONS = {
+  group89: Group89Icon,
+  group90: Group90Icon,
+  group91: Group91Icon,
+  group92: Group92Icon,
+};
 
 const RING_SIZE = 260;
 const STROKE_WIDTH = 28;
@@ -44,12 +56,6 @@ const ITEMS_DEFAULT = [
   },
 ];
 
-const ICONS = {
-  group89: require('../assets/images/Group 89.png'),
-  group90: require('../assets/images/Group 90.png'),
-  group91: require('../assets/images/Group 91.png'),
-  group92: require('../assets/images/Group 92.png'),
-};
 
 export default function Cleaner() {
   const router = useRouter();
@@ -62,6 +68,9 @@ export default function Cleaner() {
     Object.fromEntries(STATS_DEFAULT.map(s => [s.label, 0]))
   );
   const [activeItemLabel, setActiveItemLabel] = useState(null); // No item highlighted by default
+  const [centerNumber, setCenterNumber] = useState('12.7');
+  const [centerUnit, setCenterUnit] = useState('GB');
+  const [centerSub, setCenterSub] = useState('can be cleaned out');
 
   useEffect(() => {
     // Load configuration from backend (real data controlled in backend)
@@ -70,6 +79,9 @@ export default function Cleaner() {
         const cfg = await fetchCleanerConfig();
         if (cfg?.summary) {
           setMainTarget(cfg.summary.mainPercentTarget ?? MAIN_PERCENT_DEFAULT);
+          setCenterNumber(cfg.summary.centerNumber ?? '12.7');
+          setCenterUnit(cfg.summary.centerUnit ?? 'GB');
+          setCenterSub(cfg.summary.centerSub ?? 'can be cleaned out');
         }
         if (Array.isArray(cfg?.stats) && cfg.stats.length) {
           setStats(cfg.stats);
@@ -194,9 +206,9 @@ export default function Cleaner() {
           </Svg>
 
           <View style={styles.centerInfo}>
-            <Text style={[styles.centerNumber, { color: colors.text }]}>12.7</Text>
-            <Text style={[styles.centerUnit, { color: colors.accent }]}>GB</Text>
-            <Text style={[styles.centerSub, { color: colors.textSecondary }]}>can be cleaned out</Text>
+            <Text style={[styles.centerNumber, { color: colors.text }]}>{centerNumber}</Text>
+            <Text style={[styles.centerUnit, { color: colors.accent }]}>{centerUnit}</Text>
+            <Text style={[styles.centerSub, { color: colors.textSecondary }]}>{centerSub}</Text>
           </View>
         </View>
 
@@ -269,11 +281,30 @@ export default function Cleaner() {
 
           {/* List items */}
           <View style={styles.list}>
-            {items.map(item => {
+            {items.map((item, index) => {
               const isActive = activeItemLabel === item.label;
+              // Safely get icon component - ensure it's a valid React component
+              let IconComponent = ICONS.group89; // default fallback
+              
+              // Convert iconKey to string if it's a number
+              const iconKeyStr = item.iconKey ? String(item.iconKey) : null;
+              
+              if (iconKeyStr && ICONS[iconKeyStr]) {
+                const candidate = ICONS[iconKeyStr];
+                // Verify it's actually a component (function or class/object with render method)
+                if (typeof candidate === 'function') {
+                  IconComponent = candidate;
+                } else if (candidate && typeof candidate === 'object') {
+                  // Check if it's a React component (has $$typeof or default export)
+                  if (candidate.$$typeof || candidate.default) {
+                    IconComponent = candidate.default || candidate;
+                  }
+                }
+              }
+              
               return (
                 <TouchableOpacity
-                  key={item.label}
+                  key={item.label || `item-${index}`}
                   activeOpacity={0.9}
                   onPress={() => setActiveItemLabel(item.label)}
                   style={[
@@ -285,11 +316,13 @@ export default function Cleaner() {
                 >
                   <View style={styles.listLeft}>
                     <View style={styles.listIconCircle}>
-                      <Image
-                        source={item.icon || ICONS[item.iconKey] || ICONS.group89}
-                        style={styles.listIconImage}
-                        tintColor={colors.accent}
-                      />
+                      {typeof IconComponent === 'function' ? (
+                        <IconComponent
+                          width={24}
+                          height={24}
+                          color={colors.accent}
+                        />
+                      ) : null}
                     </View>
                     <Text style={[styles.listLabel, { color: colors.text }]}>{item.label}</Text>
                   </View>
@@ -461,11 +494,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  listIconImage: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
   },
   listLabel: {
     fontSize: 13,
